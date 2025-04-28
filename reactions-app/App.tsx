@@ -1,20 +1,15 @@
 import { SafeAreaView } from "react-native";
-import { StyleSheet, Text, View } from "react-native";
-import { ImageGrid } from "./components/ImageGrid";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ImageGrid from "@/components/ImageGrid"; // ✅ correct import path (notice no "../")
+
+const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ImageGrid />
-    </SafeAreaView>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ImageGrid />
+      </SafeAreaView>
+    </QueryClientProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
