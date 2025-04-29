@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { View } from "react-native";
 import { ReactionButton } from "../components/ReactionButton";
 import { useAddOrRemoveReaction } from "../hooks/useReactions";

@@ -53,14 +53,14 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   useEffect(() => {
     borderColorProgress.value = withTiming(active ? 1 : 0, { duration: 400 });
     wasActive.current = active;
-  }, [active]);
+  }, [active, borderColorProgress]);
 
   useEffect(() => {
     countOpacity.value = withSequence(
       withTiming(0.5, { duration: 100 }),
       withTiming(1, { duration: 150 })
     );
-  }, [count]);
+  }, [count, countOpacity]);
 
   const handlePress = () => {
     if (disabled) return;

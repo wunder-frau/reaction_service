@@ -1,10 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addReaction, removeReaction, getReactions } from "../api/reactions";
-import { components, operations } from "../types/api";
-
-type ReactionType =
-  operations["ReactionsController_addReaction"]["parameters"]["path"]["reactionType"];
-type ReactionResponse = components["schemas"]["ReactionResponseDto"];
+import { ReactionResponse, ReactionType } from "../constants/reactions";
 
 export const useGetReactions = (itemId: string, userId?: string) => {
   return useQuery({
@@ -30,7 +26,7 @@ export const useAddOrRemoveReaction = (itemId: string, userId: string) => {
         return addReaction(itemId, type, userId);
       }
     },
-    onMutate: async ({ type, active }) => {
+    onMutate: async ({ type }) => {
       await queryClient.cancelQueries({ queryKey: ["reactions", itemId] });
 
       const previousReactions = queryClient.getQueryData(["reactions", itemId]);

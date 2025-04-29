@@ -34,7 +34,7 @@ export const FloatingEmoji: React.FC<FloatingEmojiProps> = ({
         runOnJS(onFinish)();
       }
     });
-  }, []);
+  });
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
