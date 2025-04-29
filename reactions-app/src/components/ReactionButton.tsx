@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { TouchableWithoutFeedback, Animated, Text, StyleSheet } from "react-native";
+import { TouchableWithoutFeedback, Animated, Text, View, StyleSheet } from "react-native";
 
 interface ReactionButtonProps {
   label: string;
@@ -14,25 +14,25 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   active,
   onPress,
 }) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const backgroundColor = useRef(new Animated.Value(active ? 1 : 0)).current;
+  const scaleAnim = useRef(() => new Animated.Value(1)).current();
+  const borderColorAnim = useRef(() => new Animated.Value(active ? 1 : 0)).current();
 
   useEffect(() => {
-    Animated.timing(backgroundColor, {
+    Animated.timing(borderColorAnim, {
       toValue: active ? 1 : 0,
-      duration: 400, // smooth transition
-      useNativeDriver: true,
+      duration: 400,
+      useNativeDriver: false, // ✅ Always false for colors
     }).start();
   }, [active]);
 
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(scale, {
+      Animated.timing(scaleAnim, {
         toValue: 1.2,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: true, // ✅ Always true for transforms
       }),
-      Animated.timing(scale, {
+      Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 250,
         useNativeDriver: true,
@@ -42,14 +42,18 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
     onPress();
   };
 
-  const bgColor = backgroundColor.interpolate({
+  const interpolatedBorderColor = borderColorAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#eee", "gold"],
+    outputRange: ["#eee", "lightsteelblue"],
   });
+
+  const animatedButtonStyle = {
+    transform: [{ scale: scaleAnim }],
+  };
 
   return (
     <TouchableWithoutFeedback onPress={handlePress}>
-      <Animated.View style={[styles.button, { backgroundColor: bgColor, transform: [{ scale }] }]}>
+      <Animated.View style={[styles.button, animatedButtonStyle, { borderColor: interpolatedBorderColor }]}>
         <Text style={styles.text}>
           {label} {count}
         </Text>
@@ -60,9 +64,14 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     marginHorizontal: 5,
     borderRadius: 10,
+    borderWidth: 2,
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
   },
   text: {
     fontSize: 16,
