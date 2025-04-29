@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { ReactionButton } from "../components/ReactionButton";
 import { useAddOrRemoveReaction } from "../hooks/useReactions";
-import { components, operations } from "../types/api";
-
-type ReactionType = operations["ReactionsController_addReaction"]["parameters"]["path"]["reactionType"];
-type ReactionResponse = components["schemas"]["ReactionResponseDto"];
+import { reactionBarStyles as styles } from "@/styles/reactionBar.styles";
+import { REACTIONS, REACTION_EMOJIS, ReactionType, ReactionResponse } from "@/constants/reactions";
 
 interface ReactionBarProps {
   itemId: string;
@@ -13,20 +11,11 @@ interface ReactionBarProps {
   reactions: ReactionResponse;
 }
 
-const REACTIONS: ReactionType[] = ["LOVE", "FIRE", "ADMIRE", "CLAP"];
-const REACTION_EMOJIS: Record<ReactionType, string> = {
-  LOVE: "❤️",
-  FIRE: "🔥",
-  ADMIRE: "✨",
-  CLAP: "👏",
-};
-
 export const ReactionBar: React.FC<ReactionBarProps> = ({ itemId, userId, reactions }) => {
   const mutation = useAddOrRemoveReaction(itemId, userId);
   const [pendingReaction, setPendingReaction] = useState<ReactionType | null>(null);
 
   const handlePress = (type: ReactionType) => {
-    // 🛡️ Block fast repeat taps on the same reaction
     if (pendingReaction === type || mutation.isPending) return;
 
     const alreadyReacted = reactions[type]?.hasReacted ?? false;
@@ -37,7 +26,7 @@ export const ReactionBar: React.FC<ReactionBarProps> = ({ itemId, userId, reacti
       { type, active: alreadyReacted },
       {
         onSettled: () => {
-          setPendingReaction(null); // ✅ Unlock after server responds
+          setPendingReaction(null);
         },
       }
     );
@@ -54,18 +43,10 @@ export const ReactionBar: React.FC<ReactionBarProps> = ({ itemId, userId, reacti
             count={data.count}
             active={data.hasReacted ?? false}
             onPress={() => handlePress(reaction)}
-            disabled={pendingReaction === reaction} // ✅ Only disable tapped button
+            disabled={pendingReaction === reaction}
           />
         );
       })}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-});
