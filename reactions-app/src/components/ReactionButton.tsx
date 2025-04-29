@@ -1,10 +1,11 @@
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { TouchableWithoutFeedback, Animated, Text, StyleSheet } from "react-native";
 
 interface ReactionButtonProps {
-  label: string;        // emoji (e.g., "🔥")
-  count: number;        // number of reactions (e.g., 3)
-  active: boolean;      // whether the current user has reacted
-  onPress: () => void;  // handler for toggling reaction
+  label: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
 }
 
 export const ReactionButton: React.FC<ReactionButtonProps> = ({
@@ -12,26 +13,56 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   count,
   active,
   onPress,
-}) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[styles.button, active && styles.active]}
-  >
-    <Text style={styles.text}>
-      {label} {count}
-    </Text>
-  </TouchableOpacity>
-);
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  const backgroundColor = useRef(new Animated.Value(active ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(backgroundColor, {
+      toValue: active ? 1 : 0,
+      duration: 400, // smooth transition
+      useNativeDriver: true,
+    }).start();
+  }, [active]);
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.2,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    onPress();
+  };
+
+  const bgColor = backgroundColor.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["#eee", "gold"],
+  });
+
+  return (
+    <TouchableWithoutFeedback onPress={handlePress}>
+      <Animated.View style={[styles.button, { backgroundColor: bgColor, transform: [{ scale }] }]}>
+        <Text style={styles.text}>
+          {label} {count}
+        </Text>
+      </Animated.View>
+    </TouchableWithoutFeedback>
+  );
+};
 
 const styles = StyleSheet.create({
   button: {
     padding: 8,
     marginHorizontal: 5,
-    backgroundColor: "#eee",
     borderRadius: 10,
-  },
-  active: {
-    backgroundColor: "gold",
   },
   text: {
     fontSize: 16,

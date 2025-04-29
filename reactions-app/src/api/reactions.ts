@@ -4,7 +4,7 @@ type ReactionType =
   operations["ReactionsController_addReaction"]["parameters"]["path"]["reactionType"];
 type ReactionResponse = components["schemas"]["ReactionResponseDto"];
 
-const BASE_URL = "http://192.168.1.152:3000"; // Replace with your local IP if on real device
+const BASE_URL = "http://192.168.1.93:3000"; // Replace with your local IP if on real device
 
 // Get reactions for an item
 export const getReactions = async (
