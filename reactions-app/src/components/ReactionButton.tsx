@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState,  useReducer } from "react";
 import { Pressable, Text, StyleSheet, View } from "react-native";
 import Animated, {
   useSharedValue,
@@ -7,6 +7,11 @@ import Animated, {
   withSequence,
   interpolateColor,
 } from "react-native-reanimated";
+import {
+    reactionReducer,
+    ReactionState,
+    ReactionAction,
+  } from "@/reducers/reactionReducer";
 import { FloatingEmoji } from "./FloatingEmoji";
 
 interface ReactionButtonProps {
@@ -28,8 +33,14 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   active,
   onPress,
 }) => {
+    
+const [reactions, dispatch] = useReducer(reactionReducer, {
+        [label]: count,
+      });
+      
   const scale = useSharedValue(1);
   const borderColorProgress = useSharedValue(active ? 1 : 0);
+	const countOpacity = useSharedValue(0);
 
   const [flyingEmojis, setFlyingEmojis] = useState<FlyingEmoji[]>([]);
 
@@ -52,8 +63,18 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
 
 //     onPress();
 //   };
+
+useEffect(() => {
+  countOpacity.value = withSequence(
+    withTiming(0.5, { duration: 100 }),
+    withTiming(1, { duration: 150 })
+  );
+}, [reactions[label]]);
+
+
 const handlePress = () => {
     if (!wasActive.current) {
+      dispatch({ type: "increment", reaction: label }); 
       // Only animate scale if adding a reaction
       scale.value = withSequence(
         withTiming(1.2, { duration: 150 }),
@@ -61,8 +82,9 @@ const handlePress = () => {
       );
   
       spawnMultipleFloatingEmojis(); // only when adding
-    }
-  
+    } else {
+			dispatch({ type: "decrement", reaction: label }); // 👈 decrement when removing!
+		}
     onPress(); // fire the press callback
   
     // After firing, update wasActive manually
@@ -92,7 +114,7 @@ const handlePress = () => {
     const borderColor = interpolateColor(
       borderColorProgress.value,
       [0, 1],
-      ["#eee", "lightsteelblue"]
+      ["#eee", "lightsteelblue"],
     );
 
     return {
@@ -100,6 +122,15 @@ const handlePress = () => {
       borderColor,
     };
   });
+
+	// Animated style
+const animatedCountStyle = useAnimatedStyle(() => {
+  return {
+    opacity: countOpacity.value,
+		fontWeight: borderColorProgress.value > 0.5 ? "bold" : "normal",
+		fontSize: borderColorProgress.value > 0.5 ? 18 : 16,
+  };
+});
 
   return (
     <Pressable onPress={handlePress}>
@@ -118,7 +149,9 @@ const handlePress = () => {
         <Animated.View style={[styles.button, animatedButtonStyle]}>
           <View style={styles.content}>
             <Text style={styles.emoji}>{label}</Text>
-            <Text style={styles.count}>{count}</Text>
+						<Animated.Text style={[styles.count, animatedCountStyle]}>
+							{reactions[label]}
+						</Animated.Text>
           </View>
         </Animated.View>
       </View>
@@ -142,8 +175,8 @@ const styles = StyleSheet.create({
   },
   button: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginHorizontal: 5,
+    paddingHorizontal: 8,
+    marginHorizontal: 8,
     borderRadius: 10,
     borderWidth: 2,
     backgroundColor: "ivory",
@@ -161,5 +194,6 @@ const styles = StyleSheet.create({
   },
   count: {
     fontSize: 16,
+		color: "lightsteelblue",
   },
 });
