@@ -51,13 +51,13 @@ export default function ImageWithReactions({
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 5,
   },
   image: {
     width: 300,
     height: 300,
     borderRadius: 12,
-    marginBottom: 10,
+    marginBottom: 5,
   },
   loaderContainer: {
     alignItems: "center",
