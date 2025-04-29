@@ -38,16 +38,16 @@ export const useAddOrRemoveReaction = (itemId: string, userId: string) => {
       queryClient.setQueryData(
         ["reactions", itemId],
         (old: ReactionResponse) => {
-          const count = old?.[type]?.count ?? 0;
-          const hasReacted = old?.[type]?.hasReacted ?? false;
-
-          const updatedCount = active ? count - 1 : count + 1;
+          const prev = old?.[type] || { count: 0, hasReacted: false };
+          const updatedCount = prev.hasReacted
+            ? prev.count - 1
+            : prev.count + 1;
 
           return {
             ...old,
             [type]: {
               count: Math.max(updatedCount, 0),
-              hasReacted: !hasReacted,
+              hasReacted: !prev.hasReacted,
             },
           };
         }
