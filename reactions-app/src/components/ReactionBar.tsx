@@ -1,15 +1,17 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { components, operations } from "../types/api"; // types you generated
-import { addReaction, removeReaction } from "../api/reactions"; // your axios functions
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { ReactionButton } from "../components/ReactionButton";
+import { addReaction, removeReaction } from "../api/reactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { components, operations } from "../types/api";
 
-type ReactionType =
-  operations["ReactionsController_addReaction"]["parameters"]["path"]["reactionType"];
+type ReactionType = operations["ReactionsController_addReaction"]["parameters"]["path"]["reactionType"];
+type ReactionResponse = components["schemas"]["ReactionResponseDto"];
 
 interface ReactionBarProps {
   itemId: string;
   userId: string;
-  reactions: components["schemas"]["ReactionResponseDto"];
+  reactions: ReactionResponse;
 }
 
 const REACTIONS: ReactionType[] = ["LOVE", "FIRE", "ADMIRE", "CLAP"];
@@ -21,26 +23,12 @@ const REACTION_EMOJIS: Record<ReactionType, string> = {
   CLAP: "👏",
 };
 
-export const ReactionBar = ({
-  itemId,
-  userId,
-  reactions,
-}: ReactionBarProps) => {
+export const ReactionBar: React.FC<ReactionBarProps> = ({ itemId, userId, reactions }) => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async ({
-      type,
-      active,
-    }: {
-      type: ReactionType;
-      active: boolean;
-    }) => {
-      if (active) {
-        return removeReaction(itemId, type, userId);
-      } else {
-        return addReaction(itemId, type, userId);
-      }
+    mutationFn: async ({ type, active }: { type: ReactionType; active: boolean }) => {
+      return active ? removeReaction(itemId, type, userId) : addReaction(itemId, type, userId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reactions", itemId] });
@@ -55,19 +43,15 @@ export const ReactionBar = ({
   return (
     <View style={styles.container}>
       {REACTIONS.map((reaction) => {
-        const count = reactions[reaction]?.count ?? 0;
-        const hasReacted = reactions[reaction]?.hasReacted ?? false;
-
+        const data = reactions[reaction] || { count: 0, hasReacted: false };
         return (
-          <TouchableOpacity
+          <ReactionButton
             key={reaction}
-            style={[styles.reaction, hasReacted && styles.active]}
+            label={REACTION_EMOJIS[reaction]}
+            count={data.count}
+            active={data.hasReacted ?? false}
             onPress={() => handlePress(reaction)}
-          >
-            <Text style={styles.text}>
-              {REACTION_EMOJIS[reaction]} {count}
-            </Text>
-          </TouchableOpacity>
+          />
         );
       })}
     </View>
@@ -77,19 +61,7 @@ export const ReactionBar = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    marginTop: 8,
     justifyContent: "center",
-  },
-  reaction: {
-    padding: 8,
-    marginHorizontal: 5,
-    backgroundColor: "#eee",
-    borderRadius: 8,
-  },
-  active: {
-    backgroundColor: "gold",
-  },
-  text: {
-    fontSize: 16,
+    marginTop: 8,
   },
 });
