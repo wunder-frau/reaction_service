@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState,  useReducer } from "react";
+import React, { useEffect, useRef, useState, useReducer } from "react";
 import { Pressable, Text, StyleSheet, View } from "react-native";
 import Animated, {
   useSharedValue,
@@ -8,10 +8,10 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import {
-    reactionReducer,
-    ReactionState,
-    ReactionAction,
-  } from "@/reducers/reactionReducer";
+  reactionReducer,
+  ReactionState,
+  ReactionAction,
+} from "@/reducers/reactionReducer";
 import { FloatingEmoji } from "./FloatingEmoji";
 
 interface ReactionButtonProps {
@@ -33,17 +33,15 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   active,
   onPress,
 }) => {
-    
-const [reactions, dispatch] = useReducer(reactionReducer, {
-        [label]: count,
-      });
-      
+  const [reactions, dispatch] = useReducer(reactionReducer, {
+    [label]: count,
+  });
+
   const scale = useSharedValue(1);
   const borderColorProgress = useSharedValue(active ? 1 : 0);
-	const countOpacity = useSharedValue(0);
+  const countOpacity = useSharedValue(1);
 
   const [flyingEmojis, setFlyingEmojis] = useState<FlyingEmoji[]>([]);
-
   const wasActive = useRef(active);
 
   useEffect(() => {
@@ -51,46 +49,29 @@ const [reactions, dispatch] = useReducer(reactionReducer, {
     wasActive.current = active;
   }, [active]);
 
-//   const handlePress = () => {
-//     scale.value = withSequence(
-//       withTiming(1.2, { duration: 150 }),
-//       withTiming(1, { duration: 250 })
-//     );
+  useEffect(() => {
+    countOpacity.value = withSequence(
+      withTiming(0.5, { duration: 100 }),
+      withTiming(1, { duration: 150 })
+    );
+  }, [reactions[label]]);
 
-//     if (!wasActive.current) {
-//       spawnMultipleFloatingEmojis();
-//     }
-
-//     onPress();
-//   };
-
-useEffect(() => {
-  countOpacity.value = withSequence(
-    withTiming(0.5, { duration: 100 }),
-    withTiming(1, { duration: 150 })
-  );
-}, [reactions[label]]);
-
-
-const handlePress = () => {
+  const handlePress = () => {
     if (!wasActive.current) {
-      dispatch({ type: "increment", reaction: label }); 
-      // Only animate scale if adding a reaction
+      dispatch({ type: "increment", reaction: label });
+
       scale.value = withSequence(
         withTiming(1.2, { duration: 150 }),
         withTiming(1, { duration: 250 })
       );
-  
-      spawnMultipleFloatingEmojis(); // only when adding
+
+      spawnMultipleFloatingEmojis();
     } else {
-			dispatch({ type: "decrement", reaction: label }); // 👈 decrement when removing!
-		}
-    onPress(); // fire the press callback
-  
-    // After firing, update wasActive manually
+      dispatch({ type: "decrement", reaction: label });
+    }
+    onPress();
     wasActive.current = !wasActive.current;
   };
-  
 
   const spawnMultipleFloatingEmojis = () => {
     const newEmojis: FlyingEmoji[] = [];
@@ -98,8 +79,8 @@ const handlePress = () => {
     for (let i = 0; i < 5; i++) {
       newEmojis.push({
         id: Math.random(),
-        offsetX: Math.random() * 60 - 30, // fly left/right
-        duration: 800 + Math.random() * 600, // random between 800ms and 1400ms
+        offsetX: Math.random() * 60 - 30,
+        duration: 800 + Math.random() * 600,
       });
     }
 
@@ -114,7 +95,7 @@ const handlePress = () => {
     const borderColor = interpolateColor(
       borderColorProgress.value,
       [0, 1],
-      ["#eee", "lightsteelblue"],
+      ["#eee", "lightsteelblue"]
     );
 
     return {
@@ -123,14 +104,42 @@ const handlePress = () => {
     };
   });
 
-	// Animated style
-const animatedCountStyle = useAnimatedStyle(() => {
-  return {
-    opacity: countOpacity.value,
-		fontWeight: borderColorProgress.value > 0.5 ? "bold" : "normal",
-		fontSize: borderColorProgress.value > 0.5 ? 18 : 16,
-  };
-});
+  const animatedCountStyle = useAnimatedStyle(() => {
+    return {
+      opacity: countOpacity.value,
+      fontSize: withTiming(borderColorProgress.value > 0.5 ? 18 : 16, { duration: 300 }),
+    };
+  });
+
+  // WebSocket connection!
+  useEffect(() => {
+    const socket = new WebSocket('ws://192.168.1.152:3001'); // or replace localhost with IP if on device
+
+    socket.onopen = () => {
+      console.log('✅ WebSocket connected');
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log('📨 WebSocket update:', data);
+
+      if (data.imageId && data.reactions) {
+        dispatch({ type: "sync", reactions: data.reactions });
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('❌ WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+      console.log('🔌 WebSocket disconnected');
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   return (
     <Pressable onPress={handlePress}>
@@ -149,9 +158,15 @@ const animatedCountStyle = useAnimatedStyle(() => {
         <Animated.View style={[styles.button, animatedButtonStyle]}>
           <View style={styles.content}>
             <Text style={styles.emoji}>{label}</Text>
-						<Animated.Text style={[styles.count, animatedCountStyle]}>
-							{reactions[label]}
-						</Animated.Text>
+            <Animated.Text
+              style={[
+                styles.count,
+                animatedCountStyle,
+                { fontWeight: active ? "bold" : "normal" },
+              ]}
+            >
+              {reactions[label]}
+            </Animated.Text>
           </View>
         </Animated.View>
       </View>
@@ -165,13 +180,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   floatingLayer: {
-    position: "absolute", // floating emojis layer
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     alignItems: "center",
-    zIndex: 2, // ABOVE the button
+    zIndex: 2,
   },
   button: {
     paddingVertical: 6,
@@ -182,7 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: "ivory",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1, // BELOW the floating emojis
+    zIndex: 1,
   },
   content: {
     flexDirection: "row",
@@ -194,6 +209,6 @@ const styles = StyleSheet.create({
   },
   count: {
     fontSize: 16,
-		color: "lightsteelblue",
+    color: "lightsteelblue",
   },
 });
