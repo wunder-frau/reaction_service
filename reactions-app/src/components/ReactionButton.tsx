@@ -4,13 +4,11 @@ import Animated, {
   useSharedValue,
   withTiming,
   withSequence,
+  useAnimatedStyle,
 } from "react-native-reanimated";
 import { FloatingEmoji } from "./FloatingEmoji";
 import { reactionButtonStyles as styles } from "../styles/reactionButton.styles";
-import {
-  useAnimatedButtonStyle,
-  useAnimatedCountStyle,
-} from "@/styles/reactionButton.animations";
+import { useAnimatedButtonStyle } from "@/styles/reactionButton.animations";
 
 interface ReactionButtonProps {
   label: string;
@@ -34,8 +32,8 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   disabled = false,
 }) => {
   const scale = useSharedValue(1);
+  const countScale = useSharedValue(1);
   const borderColorProgress = useSharedValue(active ? 1 : 0);
-  const countOpacity = useSharedValue(1);
   const [flyingEmojis, setFlyingEmojis] = useState<FlyingEmoji[]>([]);
 
   const animatedButtonStyle = useAnimatedButtonStyle(
@@ -43,32 +41,36 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
     borderColorProgress,
     disabled
   );
-  const animatedCountStyle = useAnimatedCountStyle(
-    countOpacity,
-    borderColorProgress
-  );
+
+  const animatedCountStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: countScale.value }],
+    };
+  });
 
   const wasActive = useRef(active);
 
   useEffect(() => {
-    borderColorProgress.value = withTiming(active ? 1 : 0, { duration: 400 });
+    borderColorProgress.value = withTiming(active ? 1 : 0, {
+      duration: active ? 200 : 100,
+    });
     wasActive.current = active;
   }, [active, borderColorProgress]);
 
   useEffect(() => {
-    countOpacity.value = withSequence(
-      withTiming(0.5, { duration: 100 }),
+    countScale.value = withSequence(
+      withTiming(1.2, { duration: 100 }),
       withTiming(1, { duration: 150 })
     );
-  }, [count, countOpacity]);
+  }, [count, countScale]);
 
   const handlePress = () => {
     if (disabled) return;
 
     if (!wasActive.current) {
       scale.value = withSequence(
-        withTiming(1.2, { duration: 150 }),
-        withTiming(1, { duration: 250 })
+        withTiming(1.15, { duration: 100 }),
+        withTiming(1, { duration: 150 })
       );
       spawnMultipleFloatingEmojis();
     }
@@ -78,10 +80,10 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
   };
 
   const spawnMultipleFloatingEmojis = () => {
-    const newEmojis: FlyingEmoji[] = Array.from({ length: 5 }).map(() => ({
+    const newEmojis: FlyingEmoji[] = Array.from({ length: 3 }).map(() => ({
       id: Math.random(),
       offsetX: Math.random() * 60 - 30,
-      duration: 800 + Math.random() * 600,
+      duration: 300 + Math.random() * 200,
     }));
 
     setFlyingEmojis((current) => [...current, ...newEmojis]);
@@ -111,9 +113,15 @@ export const ReactionButton: React.FC<ReactionButtonProps> = ({
         </View>
         <Animated.View style={[styles.button, animatedButtonStyle]}>
           <View style={styles.content}>
-            <Text style={styles.emoji}>{label}</Text>
+            <Text style={[styles.emoji]}>{label}</Text>
             {count > 0 && (
-              <Animated.Text style={[styles.count, animatedCountStyle]}>
+              <Animated.Text
+                style={[
+                  styles.count,
+                  animatedCountStyle,
+                  active && { fontWeight: "bold" },
+                ]}
+              >
                 {count}
               </Animated.Text>
             )}

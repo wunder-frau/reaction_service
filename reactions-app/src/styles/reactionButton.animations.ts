@@ -19,7 +19,6 @@ export const useAnimatedButtonStyle = (
       [lightColor, darkColor]
     );
     return {
-      transform: [{ scale: scale.value }],
       borderColor,
       opacity: disabled ? 0.5 : 1,
     };

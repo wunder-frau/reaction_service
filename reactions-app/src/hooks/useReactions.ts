@@ -20,38 +20,35 @@ export const useAddOrRemoveReaction = (itemId: string, userId: string) => {
       type: ReactionType;
       active: boolean;
     }) => {
-      if (active) {
-        return removeReaction(itemId, type, userId);
-      } else {
-        return addReaction(itemId, type, userId);
-      }
+      return active
+        ? removeReaction(itemId, type, userId)
+        : addReaction(itemId, type, userId);
     },
-    onMutate: async ({ type }) => {
+    onMutate: async ({ type, active }) => {
       await queryClient.cancelQueries({ queryKey: ["reactions", itemId] });
 
-      const previousReactions = queryClient.getQueryData(["reactions", itemId]);
+      const previousReactions = queryClient.getQueryData<ReactionResponse>([
+        "reactions",
+        itemId,
+      ]);
 
-      queryClient.setQueryData(
-        ["reactions", itemId],
-        (old: ReactionResponse) => {
-          const prev = old?.[type] || { count: 0, hasReacted: false };
-          const updatedCount = prev.hasReacted
-            ? prev.count - 1
-            : prev.count + 1;
+      if (!previousReactions) return;
 
-          return {
-            ...old,
-            [type]: {
-              count: Math.max(updatedCount, 0),
-              hasReacted: !prev.hasReacted,
-            },
-          };
-        }
-      );
+      const updated: ReactionResponse = {
+        ...previousReactions,
+        [type]: {
+          count: active
+            ? Math.max(previousReactions[type].count - 1, 0)
+            : previousReactions[type].count + 1,
+          hasReacted: !active,
+        },
+      };
+
+      queryClient.setQueryData(["reactions", itemId], updated);
 
       return { previousReactions };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _vars, context) => {
       if (context?.previousReactions) {
         queryClient.setQueryData(
           ["reactions", itemId],
@@ -59,8 +56,8 @@ export const useAddOrRemoveReaction = (itemId: string, userId: string) => {
         );
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["reactions", itemId] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(["reactions", itemId], data);
     },
   });
 };
